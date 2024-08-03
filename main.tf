@@ -5,7 +5,7 @@ resource "random_string" "suffix" {
 }
 
 locals {
-  name = "event-notification-${random_string.suffix.result}"
+  name = "datadog-event-notification-${random_string.suffix.result}"
   text_json = jsonencode({
     "field1" : "1",
     "field2" : "abc"
@@ -24,7 +24,7 @@ locals {
 }
 
 resource "aws_cloudwatch_event_connection" "datadog" {
-  name               = "${local.name}-datadog"
+  name               = local.name
   authorization_type = "API_KEY"
 
 
@@ -36,8 +36,8 @@ resource "aws_cloudwatch_event_connection" "datadog" {
   }
 }
 
-resource "aws_iam_role" "event_notification" {
-  name = "${local.name}-event-notification"
+resource "aws_iam_role" "datadog" {
+  name = local.name
   path = "/service-role/"
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -53,9 +53,9 @@ resource "aws_iam_role" "event_notification" {
   })
 }
 
-resource "aws_iam_role_policy" "event_notification" {
-  name = "${local.name}-event-notification"
-  role = aws_iam_role.event_notification.id
+resource "aws_iam_role_policy" "datadog" {
+  name = local.name
+  role = aws_iam_role.datadog.id
 
   policy = jsonencode({
     "Version" : "2012-10-17",
@@ -73,7 +73,7 @@ resource "aws_iam_role_policy" "event_notification" {
         "Action" : [
           "states:InvokeHTTPEndpoint"
         ],
-        "Resource" : aws_sfn_state_machine.event_notification.arn
+        "Resource" : aws_sfn_state_machine.datadog.arn
       },
       {
         "Effect" : "Allow",
@@ -87,9 +87,9 @@ resource "aws_iam_role_policy" "event_notification" {
   })
 }
 
-resource "aws_sfn_state_machine" "event_notification" {
-  name     = "${local.name}-event-notification"
-  role_arn = aws_iam_role.event_notification.arn
+resource "aws_sfn_state_machine" "datadog" {
+  name     = local.name
+  role_arn = aws_iam_role.datadog.arn
 
   definition = jsonencode({
     "Comment" : "A state machine that sends events to Datadog using HTTP Task",
